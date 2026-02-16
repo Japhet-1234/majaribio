@@ -1,16 +1,15 @@
-
 import { GoogleGenAI } from "@google/genai";
 
 const API_CONFIG = {
-  // Hapa ndipo utakapoweka URL ya seva yako inayopokea taarifa za malipo
+  // Hapa ni URL ya seva yako inayopokea malipo (Replace with your actual backend if needed)
   ADMIN_ENDPOINT: "https://yoursite.com/api/v1/admin/notify", 
-  SYSTEM_INSTRUCTION: "Wewe ni msaidizi wa Kipepeo Hotspot nchini Tanzania. Saidia wateja kulipia vifurushi vya 500 (Masaa 12), 1000 (Siku 1), na 5000 (Wiki 1) kwa Kiswahili."
+  SYSTEM_INSTRUCTION: "Wewe ni msaidizi wa Kipepeo Hotspot. Saidia wateja kulipia vifurushi vya 500, 1000, na 5000 nchini Tanzania kwa Kiswahili."
 };
 
 const PACKAGES = [
-  { id: '12h', name: 'Masaa 12 Unlimited', price: 500, label: 'Saa 12' },
-  { id: '24h', name: 'Masaa 24 Unlimited', price: 1000, label: 'Siku 1' },
-  { id: '1w',  name: 'Wiki 1 Unlimited',  price: 5000, label: 'Wiki 1' },
+  { id: '12h', name: 'Masaa 12 Unlimited', price: 500, description: 'Saa 12 bila kikomo' },
+  { id: '24h', name: 'Masaa 24 Unlimited', price: 1000, description: 'Siku 1 bila kikomo' },
+  { id: '1w',  name: 'Wiki 1 Unlimited',  price: 5000, description: 'Wiki 1 bila kikomo' },
 ];
 
 const PROVIDERS = [
@@ -24,6 +23,7 @@ let selectedPackage: any = null;
 let selectedProvider: any = null;
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+// Window Global Functions kwa ajili ya HTML calls
 declare global {
   interface Window {
     selectPackage: (id: string) => void;
@@ -38,17 +38,18 @@ declare global {
 }
 
 function initApp() {
+  // Render Packages
   const pkgList = document.getElementById('package-list');
   if (pkgList) {
     pkgList.innerHTML = PACKAGES.map(p => `
-      <div onclick="window.selectPackage('${p.id}')" class="glass-card p-6 rounded-[2.5rem] border border-slate-100 hover:border-[#5D4037] hover:shadow-xl cursor-pointer transition-all flex justify-between items-center group">
+      <div onclick="window.selectPackage('${p.id}')" class="glass-card p-6 rounded-[2rem] hover:border-[#5D4037] hover:shadow-lg cursor-pointer transition-all flex justify-between items-center group">
         <div class="flex items-center gap-4">
           <div class="bg-[#5D4037]/5 p-4 rounded-2xl text-[#5D4037] group-hover:bg-[#5D4037] group-hover:text-white transition-colors">
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/></svg>
           </div>
           <div>
             <h3 class="font-extrabold text-slate-800 text-lg">${p.name}</h3>
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Internet bila kikomo - ${p.label}</p>
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${p.description}</p>
           </div>
         </div>
         <div class="text-right">
@@ -58,12 +59,13 @@ function initApp() {
     `).join('');
   }
 
+  // Render Networks
   const provList = document.getElementById('provider-grid');
   if (provList) {
     provList.innerHTML = PROVIDERS.map(p => `
       <button onclick="window.selectProvider('${p.id}')" id="prov-${p.id}" class="flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-50 bg-slate-50/50 transition-all">
-        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-[10px]" style="background-color: ${p.color}">${p.name[0]}</div>
-        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">${p.name}</span>
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-[10px]" style="background-color: ${p.color}">${p.name[0]}</div>
+        <span class="text-[8px] font-black uppercase tracking-widest text-slate-400">${p.name}</span>
       </button>
     `).join('');
   }
@@ -97,26 +99,24 @@ window.processDirectPayment = async () => {
   const phone = (document.getElementById('input-phone') as HTMLInputElement).value.trim();
   const btn = document.getElementById('btn-pay-now') as HTMLButtonElement;
 
-  if (!name || !phone || phone.length < 10) return alert("Tafadhali jaza Jina na Namba sahihi.");
-  if (!selectedProvider) return alert("Chagua mtandao wa malipo.");
+  if (!name || !phone || phone.length < 10) return alert("Jaza Jina na Namba sahihi.");
+  if (!selectedProvider) return alert("Chagua Mtandao.");
 
   btn.disabled = true;
   btn.innerHTML = `<div class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mx-auto"></div>`;
 
-  // Simulation ya kuanzisha STK Push/Ombi la Malipo
   setTimeout(() => {
     const controlNo = Math.floor(100000 + Math.random() * 900000).toString();
     document.getElementById('instr-price')!.innerText = `TZS ${selectedPackage.price}`;
     document.getElementById('instr-control')!.innerText = controlNo;
     
-    const steps = document.getElementById('instr-steps');
-    steps!.innerHTML = `
-      <div class="space-y-4 text-sm font-medium">
-        <p class="font-black text-[#5D4037] border-b pb-2 italic">Lipa kwa ${selectedProvider.name}:</p>
+    document.getElementById('instr-steps')!.innerHTML = `
+      <div class="space-y-4 text-xs font-bold">
+        <p class="text-[#5D4037] border-b pb-2 uppercase tracking-widest">Maelekezo ${selectedProvider.name}:</p>
         <p>1. Piga <b class="text-[#5D4037]">${selectedProvider.ussd}</b></p>
-        <p>2. Chagua <b>Lipa kwa Simu / Lipa Bili</b></p>
-        <p>3. Namba ya Kampuni: <b class="text-[#5D4037]">${selectedProvider.businessNo}</b></p>
-        <p>4. Kumbukumbu: <b class="text-[#5D4037] font-black tracking-widest">${controlNo}</b></p>
+        <p>2. Lipa kwa Simu / Lipa Bili</p>
+        <p>3. Kampuni: <b class="text-[#5D4037]">${selectedProvider.businessNo}</b></p>
+        <p>4. Kumbukumbu: <b class="text-[#5D4037] tracking-widest">${controlNo}</b></p>
         <p>5. Kiasi: <b class="text-red-600">${selectedPackage.price}</b></p>
       </div>
     `;
@@ -124,7 +124,7 @@ window.processDirectPayment = async () => {
     window.switchView('payment_instructions');
     btn.disabled = false;
     btn.innerText = "LIPA SASA";
-  }, 1500);
+  }, 1000);
 };
 
 window.notifyAdmin = async () => {
@@ -133,25 +133,17 @@ window.notifyAdmin = async () => {
   const btn = document.getElementById('btn-notify') as HTMLButtonElement;
 
   btn.disabled = true;
-  btn.innerHTML = `<div class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mx-auto"></div>`;
+  btn.innerHTML = `<div class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mx-auto"></div>`;
 
   try {
-    // Kutuma taarifa kwa Admin
+    // Notify Admin (Real API call Simulation)
     await fetch(API_CONFIG.ADMIN_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event: "PAYMENT_COMPLETED",
-        customer: name,
-        phone: phone,
-        amount: selectedPackage.price,
-        package: selectedPackage.name
-      })
+      body: JSON.stringify({ name, phone, amount: selectedPackage.price, pkg: selectedPackage.name })
     });
-    
     window.switchView('pending_admin');
   } catch (e) {
-    // Hata kama API ikikataa (demo), mteja aone imefanikiwa
     window.switchView('pending_admin');
   }
 };
@@ -194,7 +186,7 @@ function appendMsg(role: string, text: string) {
   if (!container) return;
   const div = document.createElement('div');
   div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
-  div.innerHTML = `<div class="max-w-[85%] p-4 rounded-2xl shadow-sm text-xs font-bold ${role === 'user' ? 'bg-[#5D4037] text-white rounded-br-none' : 'bg-white text-slate-700 border rounded-bl-none'}">${text}</div>`;
+  div.innerHTML = `<div class="max-w-[85%] p-4 rounded-2xl shadow-sm text-[10px] font-bold ${role === 'user' ? 'bg-[#5D4037] text-white' : 'bg-white text-slate-700 border'}">${text}</div>`;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
 }
